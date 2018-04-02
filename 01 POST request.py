@@ -26,7 +26,10 @@ def addOne():
         "lastName" : request.json['lastName'],
         "password" : request.json['password']
     }
-    return jsonify({"id" : userData[userId]['id']}), 200
+
+    if "" == request.json['firstName'] or "" == request.json['lastName'] or "" == request.json['password']:
+        return jsonify({"Status" : "Not Acceptable"}), 406
+    return jsonify({"id" : userData[userId]['id']}), 201
 
 if __name__ == '__main__':
     app.run(debug=True, port=8080)
