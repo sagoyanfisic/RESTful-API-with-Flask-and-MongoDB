@@ -25,6 +25,7 @@ userData['3'] = {
     "id" : "3",
     "name" : "User 3",
     "tags": [
+        "html",
         "body"
     ]
 }
@@ -37,10 +38,14 @@ def findUsers():
 
         users = {}
         for i in userData:
-            if userData[i]['tags'] == tagList:
-                users.update(userData[i])
+            if set(userData[i]['tags']) == set(tagList):
+                users[userData[i]['id']] = {
+                    "id" : userData[i]['id'],
+                    "name" : userData[i]['name'],
+                    "tags": tagList
+                }
 
-        return jsonify({"tags" : users}),200
+        return jsonify({"Users" : users}),200
     else:
         return jsonify({"Status" : "Field not found"}),404
 
