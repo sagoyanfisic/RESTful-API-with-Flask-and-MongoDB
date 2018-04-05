@@ -1,6 +1,10 @@
 from flask import Flask,request,jsonify
+import sqlite3
 
 app = Flask(__name__)
+
+conn = sqlite3.connect('users.db')
+c = conn.cursor()
 
 userData = {}
 userData['1'] = {
@@ -16,6 +20,8 @@ userData['2'] = {
     "password" : "22"
 }
 
+print(type(userData))
+
 @app.route('/users', methods=['POST'])
 def addOne():
     size = len(userData) + 1
@@ -30,6 +36,9 @@ def addOne():
     if "" == request.json['firstName'] or "" == request.json['lastName'] or "" == request.json['password']:
         return jsonify({"Status" : "Not Acceptable"}), 406
     return jsonify({"id" : userData[userId]['id']}), 201
+
+c.close()
+conn.close()
 
 if __name__ == '__main__':
     app.run(debug=True, port=8080)

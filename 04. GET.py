@@ -42,7 +42,7 @@ def findUsers():
                 users[userData[i]['id']] = {
                     "id" : userData[i]['id'],
                     "name" : userData[i]['name'],
-                    "tags": tagList
+                    "tags": userData[i]['tags']
                 }
 
         return jsonify({"Users" : users}),200
