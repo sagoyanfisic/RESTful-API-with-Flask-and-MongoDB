@@ -3,16 +3,13 @@ import sqlite3
 
 app = Flask(__name__)
 
-def get_db():
+def getDatabase():
     db = getattr(g, '_database', None)
     if db is None:
-        db = g._database = sqlite3.connect(DATABASE)
+        db = g._database = sqlite3.connect('userData.db')
     return db
 
-conn = sqlite3.connect('users.db')
-c = conn.cursor()
-
-userData = {}
+userData = {} # Dictionary
 userData['1'] = {
     "id" : "1",
     "firstName" : "User",
@@ -26,10 +23,33 @@ userData['2'] = {
     "password" : "22"
 }
 
-print(type(userData))
-
 @app.route('/users', methods=['POST'])
 def addOne():
+    cur = getDatabase().cursor()
+
+    cur.execute('''SELECT * FROM users''')
+    data = cur.fetchall()
+
+    userData = {}
+    for row in data:
+        userData[row[0]] = {
+            "id" : row[0],
+            "fullName" : row[1],
+            "firstName" : row[2],
+            "lastName" : row[3],
+            "password" : row[4],
+            "tags" : row[5],
+            "expiry" : row[6]
+        }
+    return jsonify({"Users": userData})
+
+    # dict((y, x) for x, y in tuple)
+
+
+
+    # userData = {}
+    # for i in data:
+
     size = len(userData) + 1
     userId = str(size)
     userData[userId] = {
@@ -39,12 +59,17 @@ def addOne():
         "password" : request.json['password']
     }
 
+    # cur.close()
+
     if "" == request.json['firstName'] or "" == request.json['lastName'] or "" == request.json['password']:
         return jsonify({"Status" : "Not Acceptable"}), 406
     return jsonify({"id" : userData[userId]['id']}), 201
 
-c.close()
-conn.close()
+@app.teardown_appcontext
+def close_connection(exception):
+    db = getattr(g, '_database', None)
+    if db is not None:
+        db.close()
 
 if __name__ == '__main__':
     app.run(debug=True, port=8080)
