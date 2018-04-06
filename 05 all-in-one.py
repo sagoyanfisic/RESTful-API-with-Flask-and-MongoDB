@@ -9,27 +9,12 @@ def getDatabase():
         db = g._database = sqlite3.connect('userData.db')
     return db
 
-userData = {} # Dictionary
-userData['1'] = {
-    "id" : "1",
-    "firstName" : "User",
-    "lastName" : "1",
-    "password" : "11"
-}
-userData['2'] = {
-    "id" : "2",
-    "firstName" : "User",
-    "lastName" : "2",
-    "password" : "22"
-}
-
 @app.route('/users', methods=['POST'])
 def addOne():
     cur = getDatabase().cursor()
-
     cur.execute('''SELECT * FROM users''')
     data = cur.fetchall()
-
+    
     userData = {}
     for row in data:
         userData[row[0]] = {
@@ -41,29 +26,73 @@ def addOne():
             "tags" : row[5],
             "expiry" : row[6]
         }
-    return jsonify({"Users": userData})
-
-    # dict((y, x) for x, y in tuple)
-
-
-
-    # userData = {}
-    # for i in data:
 
     size = len(userData) + 1
     userId = str(size)
-    userData[userId] = {
-        "id" : userId,
-        "firstName" : request.json['firstName'],
-        "lastName" : request.json['lastName'],
-        "password" : request.json['password']
-    }
+    fullName = 'User '+userId
+    firstName = request.json['firstName']
+    lastName = request.json['lastName']
+    password = request.json['password']
+    tags = 'head'
+    expiry = userId+'ms'
 
-    # cur.close()
+    cur.execute('''INSERT INTO users(userId, fullName, firstName, lastName, password, tags, expiry) 
+    VALUES(?, ?, ?, ?, ?, ?, ?)''', (userId, fullName, firstName, lastName, password, tags, expiry))
+    getDatabase().commit()
+    cur.close()
 
-    if "" == request.json['firstName'] or "" == request.json['lastName'] or "" == request.json['password']:
+    if "" == firstName or "" == lastName or "" == password:
         return jsonify({"Status" : "Not Acceptable"}), 406
-    return jsonify({"id" : userData[userId]['id']}), 201
+    return jsonify({"id" : userId}), 201
+
+@app.route('/users/<string:userId>', methods=['GET'])
+def findId(userId):
+    cur = getDatabase().cursor()
+    cur.execute('''SELECT * FROM users''')
+    data = cur.fetchall()
+    
+    userData = {}
+    for row in data:
+        userData[row[0]] = {
+            "id" : row[0],
+            "fullName" : row[1]
+        }
+
+    cur.close()
+        
+    for ids in userData:
+        if userData[ids]['id'] == userId:
+            return jsonify(userData[ids]), 200
+    return jsonify({'Status' : 'Not found'}), 404
+
+@app.route('/users/<string:userId>/tags', methods=['POST'])
+def addValues(userId):
+    cur = getDatabase().cursor()
+    cur.execute('''SELECT * FROM users''')
+    data = cur.fetchall()
+    
+    userData = {}
+    for row in data:
+        userData[row[0]] = {
+            "id" : row[0]
+        }
+    flag = 0
+    for ids in userData:
+        if userData[ids]['id'] == userId:
+            flag = 1
+    if flag == 0:
+        return jsonify({'Status' : 'ID Not found'}), 404
+
+    tags = request.json['tags'],
+    expiry = request.json['expiry']
+
+    ##    return jsonify({'Status' : 'OK'}), 200
+
+    cur.execute('''UPDATE users SET tags = ?,expiry = ? WHERE userId = ?''', (tags, expiry, userId))
+    getDatabase().commit()
+    cur.close()
+    
+    return jsonify({'Status' : 'OK'}), 200
 
 @app.teardown_appcontext
 def close_connection(exception):
