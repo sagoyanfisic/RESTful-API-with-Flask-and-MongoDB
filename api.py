@@ -14,26 +14,14 @@ def addOne():
     cur = getDatabase().cursor()
     cur.execute('''SELECT * FROM users''')
     data = cur.fetchall()
-    
-    userData = {}
-    for row in data:
-        userData[row[0]] = {
-            "id" : row[0],
-            "fullName" : row[1],
-            "firstName" : row[2],
-            "lastName" : row[3],
-            "password" : row[4],
-            "tags" : row[5],
-            "expiry" : row[6]
-        }
 
-    size = len(userData) + 1
+    size = len(data) + 1
     userId = str(size)
     fullName = 'User '+userId
     firstName = request.json['firstName']
     lastName = request.json['lastName']
     password = request.json['password']
-    tags = 'head'
+    tags = ''
     expiry = userId+'ms'
 
     cur.execute('''INSERT INTO users(userId, fullName, firstName, lastName, password, tags, expiry) 
