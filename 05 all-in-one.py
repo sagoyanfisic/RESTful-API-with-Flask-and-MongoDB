@@ -1,5 +1,5 @@
 from flask import Flask,request,jsonify,g
-import sqlite3
+import sqlite3, re
 
 app = Flask(__name__)
 
@@ -86,11 +86,11 @@ def addValues(userId):
     tags = request.json['tags'],
     expiry = request.json['expiry']
 
-    ##    return jsonify({'Status' : 'OK'}), 200
+    return jsonify({'Status' : 'OK'}), 200
 
     cur.execute('''UPDATE users SET tags = ?,expiry = ? WHERE userId = ?''', (tags, expiry, userId))
     getDatabase().commit()
-    cur.close()
+    # cur.close()
     
     return jsonify({'Status' : 'OK'}), 200
 
