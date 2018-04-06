@@ -1,4 +1,4 @@
-from flask import Flask,request,jsonify,g
+from flask import Flask, request, jsonify, g
 import sqlite3, re
 
 app = Flask(__name__)
@@ -83,16 +83,44 @@ def addValues(userId):
     if flag == 0:
         return jsonify({'Status' : 'ID Not found'}), 404
 
-    tags = request.json['tags'],
+    temp = request.json['tags']
+    tags = ','.join(temp)
     expiry = request.json['expiry']
 
-    return jsonify({'Status' : 'OK'}), 200
-
-    cur.execute('''UPDATE users SET tags = ?,expiry = ? WHERE userId = ?''', (tags, expiry, userId))
+    cur.execute('''UPDATE users SET tags = ?, expiry = ? WHERE userId = ?''', (tags, expiry, userId))
     getDatabase().commit()
-    # cur.close()
+    cur.close()
     
-    return jsonify({'Status' : 'OK'}), 200
+    return jsonify({}), 200
+
+@app.route('/users', methods=['GET'])
+def findUsers():
+    if 'tags' in request.args:
+        tags = request.args.get('tags', default=None, type=str)
+        tagList = re.sub("[^\w]", " ", tags).split()
+
+        cur = getDatabase().cursor()
+        cur.execute('''SELECT * FROM users''')
+        data = cur.fetchall()
+
+        userData = {}
+        for row in data:
+            userTags = re.sub("[^\w]", " ", row[5]).split()
+            if set(tagList) == set(userTags):
+                userData[row[0]] = {
+                    "id" : row[0],
+                    "name" : row[1],
+                    "tags" : userTags
+                }
+
+        cur.close()
+
+        if len(userData) == 0:
+            return jsonify({"Status" : "No user found"}),404
+
+        return jsonify({"Users" : userData}),200
+    else:
+        return jsonify({"Status" : "Field not found"}),404
 
 @app.teardown_appcontext
 def close_connection(exception):
