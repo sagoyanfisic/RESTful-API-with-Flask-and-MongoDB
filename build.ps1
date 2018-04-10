@@ -1,0 +1,1 @@
+docker build -t flask_api_image:latest .

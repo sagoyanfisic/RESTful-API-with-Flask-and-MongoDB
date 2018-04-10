@@ -1,0 +1,1 @@
+docker run --name rest_api -it -d -p 8080:8080 flask_api_image:latest
