@@ -9,29 +9,50 @@ def getDatabase():
         db = g._database = sqlite3.connect('userData.db')
     return db
 
-@app.route('/users', methods=['POST'])
-def addOne():
-    cur = getDatabase().cursor()
-    cur.execute('''SELECT * FROM users''')
-    data = cur.fetchall()
+@app.route('/users', methods=['POST', 'GET'])
+def addOneOrShowAll():
+    if request.method == 'POST':
+        cur = getDatabase().cursor()
+        cur.execute('''SELECT * FROM users''')
+        data = cur.fetchall()
 
-    size = len(data) + 1
-    userId = str(size)
-    fullName = 'User '+userId
-    firstName = request.json['firstName']
-    lastName = request.json['lastName']
-    password = request.json['password']
-    tags = ''
-    expiry = userId+'ms'
+        size = len(data) + 1
+        userId = str(size)
+        firstName = request.json['firstName']
+        lastName = request.json['lastName']
+        fullName = firstName + ' ' + lastName
+        password = request.json['password']
+        tags = ''
+        expiry = userId+'ms'
 
-    cur.execute('''INSERT INTO users(userId, fullName, firstName, lastName, password, tags, expiry) 
-    VALUES(?, ?, ?, ?, ?, ?, ?)''', (userId, fullName, firstName, lastName, password, tags, expiry))
-    getDatabase().commit()
-    cur.close()
+        cur.execute('''INSERT INTO users(userId, fullName, firstName, lastName, password, tags, expiry) 
+        VALUES(?, ?, ?, ?, ?, ?, ?)''', (userId, fullName, firstName, lastName, password, tags, expiry))
+        getDatabase().commit()
+        cur.close()
 
-    if "" == firstName or "" == lastName or "" == password:
-        return jsonify({"Status" : "Not Acceptable"}), 406
-    return jsonify({"id" : userId}), 201
+        if "" == firstName or "" == lastName or "" == password:
+            return jsonify({"Status" : "Not Acceptable"}), 406
+        return jsonify({"id" : userId}), 201
+
+    elif request.method == 'GET':
+        cur = getDatabase().cursor()
+        cur.execute('''SELECT * FROM users''')
+        data = cur.fetchall()
+
+        userData = {}
+        for row in data:
+            userTags = re.sub("[^\w]", " ", row[5]).split()
+            userData[row[0]] = {
+                "id" : row[0],
+                "full name" : row[1],
+                "first name" : row[2],
+                "last name" : row[3],
+                "password" : row[4],
+                "tags" : userTags,
+                "expiry" : row[6]
+            }
+
+        return jsonify({"users" : userData}), 200
 
 @app.route('/users/<string:userId>', methods=['GET'])
 def findId(userId):
@@ -117,4 +138,4 @@ def close_connection(exception):
         db.close()
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8080, host='0.0.0.0')
+    app.run(debug=True, host='0.0.0.0', port=8080)
