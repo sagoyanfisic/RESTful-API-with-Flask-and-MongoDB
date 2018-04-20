@@ -1,58 +1,43 @@
 from flask import Flask, request, jsonify, g
-import sqlite3, re
+import MySQLdb, mysql.connector, re
 
 app = Flask(__name__)
 
 def getDatabase():
     db = getattr(g, '_database', None)
     if db is None:
-        db = g._database = sqlite3.connect('userData.db')
+        db = g._database = mysql.connector.connect(user='root', host='db', port='3306', password='1', database='userdata')
     return db
 
-@app.route('/users', methods=['POST', 'GET'])
-def addOneOrShowAll():
-    if request.method == 'POST':
-        cur = getDatabase().cursor()
-        cur.execute('''SELECT * FROM users''')
-        data = cur.fetchall()
+# TESTING
+@app.route('/', methods=['GET'])
+def check():
+    return jsonify({"Status" : "Testing request..."}), 200
+# TESTING
 
-        size = len(data) + 1
-        userId = str(size)
-        firstName = request.json['firstName']
-        lastName = request.json['lastName']
-        fullName = firstName + ' ' + lastName
-        password = request.json['password']
-        tags = ''
-        expiry = userId+'ms'
+@app.route('/users', methods=['POST'])
+def addOne():
+    cur = getDatabase().cursor()
+    cur.execute('''SELECT * FROM users''')
+    data = cur.fetchall()
 
-        cur.execute('''INSERT INTO users(userId, fullName, firstName, lastName, password, tags, expiry) 
-        VALUES(?, ?, ?, ?, ?, ?, ?)''', (userId, fullName, firstName, lastName, password, tags, expiry))
-        getDatabase().commit()
-        cur.close()
+    size = len(data) + 1
+    userId = str(size)
+    firstName = request.json['firstName']
+    lastName = request.json['lastName']
+    fullName = firstName + ' ' + lastName
+    password = request.json['password']
+    tags = ''
+    expiry = userId+'ms'
 
-        if "" == firstName or "" == lastName or "" == password:
-            return jsonify({"Status" : "Not Acceptable"}), 406
-        return jsonify({"id" : userId}), 201
+    cur.execute('''INSERT INTO users(userId, fullName, firstName, lastName, password, tags, expiry) 
+    VALUES(%s, %s, %s, %s, %s, %s, %s)''', (userId, fullName, firstName, lastName, password, tags, expiry))
+    getDatabase().commit()
+    cur.close()
 
-    elif request.method == 'GET':
-        cur = getDatabase().cursor()
-        cur.execute('''SELECT * FROM users''')
-        data = cur.fetchall()
-
-        userData = {}
-        for row in data:
-            userTags = re.sub("[^\w]", " ", row[5]).split()
-            userData[row[0]] = {
-                "id" : row[0],
-                "full name" : row[1],
-                "first name" : row[2],
-                "last name" : row[3],
-                "password" : row[4],
-                "tags" : userTags,
-                "expiry" : row[6]
-            }
-
-        return jsonify({"users" : userData}), 200
+    if "" == firstName or "" == lastName or "" == password:
+        return jsonify({"Status" : "Not Acceptable"}), 406
+    return jsonify({"id" : userId}), 201
 
 @app.route('/users/<string:userId>', methods=['GET'])
 def findId(userId):
@@ -96,7 +81,7 @@ def addValues(userId):
     tags = ','.join(temp)
     expiry = request.json['expiry']
 
-    cur.execute('''UPDATE users SET tags = ?, expiry = ? WHERE userId = ?''', (tags, expiry, userId))
+    cur.execute('''UPDATE users SET tags = %s, expiry = %s WHERE userId = %s''', (tags, expiry, userId))
     getDatabase().commit()
     cur.close()
     
@@ -129,7 +114,24 @@ def findUsers():
 
         return jsonify({"Users" : userData}),200
     else:
-        return jsonify({"Status" : "Field not found"}),404
+        cur = getDatabase().cursor()
+        cur.execute('''SELECT * FROM users''')
+        data = cur.fetchall()
+
+        userData = {}
+        for row in data:
+            userTags = re.sub("[^\w]", " ", row[5]).split()
+            userData[row[0]] = {
+                "id" : row[0],
+                "full name" : row[1],
+                "first name" : row[2],
+                "last name" : row[3],
+                "password" : row[4],
+                "tags" : userTags,
+                "expiry" : row[6]
+            }
+
+        return jsonify({"Users" : userData}), 200
 
 @app.teardown_appcontext
 def close_connection(exception):

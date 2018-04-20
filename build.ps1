@@ -1,1 +1,3 @@
-docker build -t flask_api_image:latest .
+#!/bin/bash
+
+docker-compose up
