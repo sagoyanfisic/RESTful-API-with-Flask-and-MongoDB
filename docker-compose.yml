@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  api:
+    build: ./api
+    volumes:
+      - ./api:/app
+    links:
+      - db
+    ports:
+      - 8080:8080
+  db:
+    image: mongo:latest
+    command: mongod --port 5000
+    environment:
+      - MONGO_INITDB_DATABASE = userdata
+    ports:
+      - 5000:5000
+  db_seed:
+    build: ./db
+    links:
+      - db
