@@ -13,7 +13,7 @@ services:
     image: mongo:latest
     command: mongod --port 5000
     environment:
-      - MONGO_INITDB_DATABASE = userdata
+      - MONGO_INITDB_DATABASE=userdata
     ports:
       - 5000:5000
   db_seed:
